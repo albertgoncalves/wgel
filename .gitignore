@@ -1,0 +1,13 @@
+*
+!.gitignore
+!shell.nix
+!.shellhook
+!src/
+!.tidyrc
+!.clang-format
+!.jshintrc
+!*.html
+!*.css
+!*.js
+!shader.*
+!codegen
