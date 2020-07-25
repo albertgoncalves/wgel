@@ -1,3 +1,5 @@
+/* global mat4, vec3 */
+
 "use strict";
 
 function getGl(color) {
@@ -46,7 +48,10 @@ function getShaders(gl, vertexBuffer) {
     gl.attachShader(program,
                     getCompiledShader(gl, "fragment", gl.FRAGMENT_SHADER));
     gl.linkProgram(program);
-    var uniformColor = gl.getUniformLocation(program, "color");
+    var uniform = {
+        color: gl.getUniformLocation(program, "color"),
+        transform: gl.getUniformLocation(program, "transform"),
+    };
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         console.error(gl.getProgramInfoLog(program));
     }
@@ -56,21 +61,45 @@ function getShaders(gl, vertexBuffer) {
     return {
         positionAttribute: positionAttribute,
         program: program,
-        uniformColor: uniformColor,
+        uniform: uniform,
     };
 }
 
-function draw(gl, shaders, color) {
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.useProgram(shaders.program);
-    gl.enableVertexAttribArray(shaders.positionAttribute);
-    gl.uniform4fv(shaders.uniformColor, [
+function draw(gl, shaders, color, transform) {
+    gl.uniform4fv(shaders.uniform.color, [
         color.red,
         color.green,
         color.blue,
         color.alpha,
     ]);
+    gl.uniformMatrix4fv(shaders.uniform.transform, false, transform);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function drawRect1(gl, shaders, transform) {
+    mat4.translate(transform, transform, vec3.fromValues(-0.25, 0.25, 0.0));
+    mat4.rotateZ(transform, transform, 0.2);
+    mat4.scale(transform, transform, vec3.fromValues(1.2, 1.2, 1.0));
+    var color = {
+        red: 0.25,
+        green: 0.875,
+        blue: 0.65,
+        alpha: 1.0,
+    };
+    draw(gl, shaders, color, transform);
+}
+
+function drawRect2(gl, shaders, transform) {
+    mat4.translate(transform, transform, vec3.fromValues(0.25, -0.25, 0.0));
+    mat4.rotateZ(transform, transform, -0.785);
+    mat4.scale(transform, transform, vec3.fromValues(0.4, 0.4, 1.0));
+    var color = {
+        red: 0.875,
+        green: 0.25,
+        blue: 0.65,
+        alpha: 1.0,
+    };
+    draw(gl, shaders, color, transform);
 }
 
 window.onload = function() {
@@ -81,11 +110,12 @@ window.onload = function() {
         alpha: 1.0,
     });
     var shaders = getShaders(gl, getVertexBuffer(gl));
-    draw(gl, shaders, {
-        red: 0.25,
-        green: 0.875,
-        blue: 0.65,
-        alpha: 1.0,
-    });
+    var transform = mat4.create();
+    gl.useProgram(shaders.program);
+    gl.enableVertexAttribArray(shaders.positionAttribute);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    drawRect1(gl, shaders, transform);
+    mat4.identity(transform);
+    drawRect2(gl, shaders, transform);
     console.log("Done!");
 };
