@@ -1,25 +1,24 @@
 "use strict";
 
-var CANVAS, GL;
-
-function setGl(color) {
-    CANVAS = document.getElementById("canvas");
-    GL = CANVAS.getContext("webgl");
-    GL.clearColor(color.red, color.green, color.blue, color.alpha);
+function getGl(color) {
+    var canvas = document.getElementById("canvas");
+    var gl = canvas.getContext("webgl");
+    gl.clearColor(color.red, color.green, color.blue, color.alpha);
+    return gl;
 }
 
-function getCompiledShader(id, type) {
-    var shader = GL.createShader(type);
-    GL.shaderSource(shader,
+function getCompiledShader(gl, id, type) {
+    var shader = gl.createShader(type);
+    gl.shaderSource(shader,
                     document.getElementById(id).firstChild.textContent);
-    GL.compileShader(shader);
-    if (!GL.getShaderParameter(shader, GL.COMPILE_STATUS)) {
-        console.error(GL.getShaderInfoLog(shader));
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.error(gl.getShaderInfoLog(shader));
     }
     return shader;
 }
 
-function getVertexBuffer() {
+function getVertexBuffer(gl) {
     var vertices = new Float32Array([
         0.5,
         0.5,
@@ -34,25 +33,26 @@ function getVertexBuffer() {
         -0.5,
         0.0,
     ]);
-    var vertexBuffer = GL.createBuffer();
-    GL.bindBuffer(GL.ARRAY_BUFFER, vertexBuffer);
-    GL.bufferData(GL.ARRAY_BUFFER, vertices, GL.STATIC_DRAW);
+    var vertexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
     return vertexBuffer;
 }
 
-function getShaders(vertexBuffer) {
-    var program = GL.createProgram();
-    GL.attachShader(program, getCompiledShader("vertex", GL.VERTEX_SHADER));
-    GL.attachShader(program,
-                    getCompiledShader("fragment", GL.FRAGMENT_SHADER));
-    GL.linkProgram(program);
-    var uniformColor = GL.getUniformLocation(program, "color");
-    if (!GL.getProgramParameter(program, GL.LINK_STATUS)) {
-        console.error(GL.getProgramInfoLog(program));
+function getShaders(gl, vertexBuffer) {
+    var program = gl.createProgram();
+    gl.attachShader(program,
+                    getCompiledShader(gl, "vertex", gl.VERTEX_SHADER));
+    gl.attachShader(program,
+                    getCompiledShader(gl, "fragment", gl.FRAGMENT_SHADER));
+    gl.linkProgram(program);
+    var uniformColor = gl.getUniformLocation(program, "color");
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.error(gl.getProgramInfoLog(program));
     }
-    var positionAttribute = GL.getAttribLocation(program, "position");
-    GL.bindBuffer(GL.ARRAY_BUFFER, vertexBuffer);
-    GL.vertexAttribPointer(positionAttribute, 3, GL.FLOAT, false, 0, 0);
+    var positionAttribute = gl.getAttribLocation(program, "position");
+    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.vertexAttribPointer(positionAttribute, 3, gl.FLOAT, false, 0, 0);
     return {
         positionAttribute: positionAttribute,
         program: program,
@@ -60,28 +60,28 @@ function getShaders(vertexBuffer) {
     };
 }
 
-function draw(shaders, color) {
-    GL.clear(GL.COLOR_BUFFER_BIT);
-    GL.useProgram(shaders.program);
-    GL.enableVertexAttribArray(shaders.positionAttribute);
-    GL.uniform4fv(shaders.uniformColor, [
+function draw(gl, shaders, color) {
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.useProgram(shaders.program);
+    gl.enableVertexAttribArray(shaders.positionAttribute);
+    gl.uniform4fv(shaders.uniformColor, [
         color.red,
         color.green,
         color.blue,
         color.alpha,
     ]);
-    GL.drawArrays(GL.TRIANGLE_STRIP, 0, 4);
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 }
 
 window.onload = function() {
-    setGl({
+    var gl = getGl({
         red: 0.0,
         green: 0.5,
         blue: 0.75,
         alpha: 1.0,
     });
-    var shaders = getShaders(getVertexBuffer());
-    draw(shaders, {
+    var shaders = getShaders(gl, getVertexBuffer(gl));
+    draw(gl, shaders, {
         red: 0.25,
         green: 0.875,
         blue: 0.65,
