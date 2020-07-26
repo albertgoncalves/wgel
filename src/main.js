@@ -13,28 +13,26 @@ function getCompiledShader(gl, id, type) {
     return shader;
 }
 
-function getVertexBuffer(gl) {
+function setVertexBuffer(gl) {
     var vertices = new Float32Array([
-        0.5,
-        0.5,
+        1.0,
+        1.0,
         0.0,
-        -0.5,
-        0.5,
+        -1.0,
+        1.0,
         0.0,
-        0.5,
-        -0.5,
+        1.0,
+        -1.0,
         0.0,
-        -0.5,
-        -0.5,
+        -1.0,
+        -1.0,
         0.0,
     ]);
-    var vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
     gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-    return vertexBuffer;
 }
 
-function getShaders(gl, vertexBuffer) {
+function getShaders(gl) {
     var program = gl.createProgram();
     gl.attachShader(program,
                     getCompiledShader(gl, "vertex", gl.VERTEX_SHADER));
@@ -50,7 +48,6 @@ function getShaders(gl, vertexBuffer) {
         console.error(gl.getProgramInfoLog(program));
     }
     var positionAttribute = gl.getAttribLocation(program, "position");
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
     gl.vertexAttribPointer(positionAttribute, 3, gl.FLOAT, false, 0, 0);
     return {
         positionAttribute: positionAttribute,
@@ -114,51 +111,37 @@ function setGl(canvas, gl, shaders) {
     gl.enableVertexAttribArray(shaders.positionAttribute);
 }
 
-function draw(gl, shaders, color, transform) {
-    gl.uniform4fv(shaders.uniform.color, [
-        color.red,
-        color.green,
-        color.blue,
-        color.alpha,
-    ]);
+function getColorArray(red, green, blue, alpha) {
+    return new Float32Array([red, green, blue, alpha]);
+}
+
+function getTransform(x, y, width, height, rotate) {
+    var transform = mat4.create();
+    mat4.translate(transform, transform, vec3.fromValues(x, y, 0.0));
+    mat4.scale(transform, transform, vec3.fromValues(width, height, 1.0));
+    mat4.rotateZ(transform, transform, rotate);
+    return transform;
+}
+
+function draw(gl, shaders, transform, color) {
+    gl.uniform4fv(shaders.uniform.color, color);
     gl.uniformMatrix4fv(shaders.uniform.transform, false, transform);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-}
-
-function drawRect1(gl, shaders, transform) {
-    var transform = mat4.create();
-    mat4.translate(transform, transform, vec3.fromValues(0.0, 0.0, 0.0));
-    mat4.rotateZ(transform, transform, 0.2);
-    mat4.scale(transform, transform, vec3.fromValues(5.0, 5.0, 1.0));
-    var color = {
-        red: 0.25,
-        green: 0.875,
-        blue: 0.65,
-        alpha: 1.0,
-    };
-    draw(gl, shaders, color, transform);
-}
-
-function drawRect2(gl, shaders) {
-    var transform = mat4.create();
-    mat4.translate(transform, transform, vec3.fromValues(0.0, 0.0, 0.0));
-    mat4.rotateZ(transform, transform, -0.785);
-    mat4.scale(transform, transform, vec3.fromValues(2.0, 2.0, 1.0));
-    var color = {
-        red: 0.25,
-        green: 0.65,
-        blue: 0.875,
-        alpha: 1.0,
-    };
-    draw(gl, shaders, color, transform);
 }
 
 window.onload = function() {
     var canvas = document.getElementById("canvas");
     var gl = canvas.getContext("webgl");
-    var shaders = getShaders(gl, getVertexBuffer(gl));
+    setVertexBuffer(gl);
+    var shaders = getShaders(gl);
     setGl(canvas, gl, shaders);
-    drawRect1(gl, shaders);
-    drawRect2(gl, shaders);
+    draw(gl,
+         shaders,
+         getTransform(0.0, 0.0, 2.5, 2.5, 0.2),
+         getColorArray(0.25, 0.875, 0.65, 1.0));
+    draw(gl,
+         shaders,
+         getTransform(0.0, 0.0, 1.0, 1.0, -0.785),
+         getColorArray(0.25, 0.65, 0.875, 1.0));
     console.log("Done!");
 };
