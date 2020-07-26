@@ -77,6 +77,7 @@ function draw(gl, shaders, color, transform) {
 }
 
 function drawRect1(gl, shaders, transform) {
+    var transform = mat4.create();
     mat4.translate(transform, transform, vec3.fromValues(-0.25, 0.25, 0.0));
     mat4.rotateZ(transform, transform, 0.2);
     mat4.scale(transform, transform, vec3.fromValues(1.2, 1.2, 1.0));
@@ -89,7 +90,8 @@ function drawRect1(gl, shaders, transform) {
     draw(gl, shaders, color, transform);
 }
 
-function drawRect2(gl, shaders, transform) {
+function drawRect2(gl, shaders) {
+    var transform = mat4.create();
     mat4.translate(transform, transform, vec3.fromValues(0.25, -0.25, 0.0));
     mat4.rotateZ(transform, transform, -0.785);
     mat4.scale(transform, transform, vec3.fromValues(0.4, 0.4, 1.0));
@@ -110,12 +112,14 @@ window.onload = function() {
         alpha: 1.0,
     });
     var shaders = getShaders(gl, getVertexBuffer(gl));
-    var transform = mat4.create();
     gl.useProgram(shaders.program);
     gl.enableVertexAttribArray(shaders.positionAttribute);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    drawRect1(gl, shaders, transform);
-    mat4.identity(transform);
-    drawRect2(gl, shaders, transform);
+    function loop() {
+        gl.clear(gl.COLOR_BUFFER_BIT);
+        drawRect1(gl, shaders);
+        drawRect2(gl, shaders);
+        requestAnimationFrame(loop);
+    }
+    loop();
     console.log("Done!");
 };
