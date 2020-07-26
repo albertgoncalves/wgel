@@ -2,13 +2,6 @@
 
 "use strict";
 
-function getGl(color) {
-    var canvas = document.getElementById("canvas");
-    var gl = canvas.getContext("webgl");
-    gl.clearColor(color.red, color.green, color.blue, color.alpha);
-    return gl;
-}
-
 function getCompiledShader(gl, id, type) {
     var shader = gl.createShader(type);
     gl.shaderSource(shader,
@@ -51,6 +44,7 @@ function getShaders(gl, vertexBuffer) {
     var uniform = {
         color: gl.getUniformLocation(program, "color"),
         transform: gl.getUniformLocation(program, "transform"),
+        projection: gl.getUniformLocation(program, "projection"),
     };
     if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
         console.error(gl.getProgramInfoLog(program));
@@ -63,6 +57,37 @@ function getShaders(gl, vertexBuffer) {
         program: program,
         uniform: uniform,
     };
+}
+
+function setGl(gl, shaders) {
+    gl.clearColor(0.9, 0.9, 0.9, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    /* NOTE: `viewport` -> `560` by `400` */
+    gl.viewport(40.0, 40.0, 560.0, 400.0);
+    gl.scissor(40.0, 40.0, 560.0, 400.0);
+    gl.enable(gl.SCISSOR_TEST);
+    gl.clearColor(0.8, 0.8, 0.8, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.useProgram(shaders.program);
+    var lookAt = mat4.create();
+    mat4.lookAt(lookAt,             // NOTE:
+                [20.0, 60.0, 10.0], //  camera position
+                [20.0, 60.0, 0.0],  //  look-at position
+                [0.0, 1.0, 0.0]);   //  orientation
+    var ortho = mat4.create();
+    /* NOTE: `World Space` -> `14` by `10` */
+    mat4.ortho(ortho,   // NOTE:
+               -7.0,    //  distance to left of `World Space`
+               7.0,     //  distance to right of `World Space`
+               -5.0,    //  distance to bottom of `World Space`
+               5.0,     //  distance to top of `World Space`
+               0.0,     //  z-distance to near plane
+               1000.0); //  z-distance to far plane
+    var projection = mat4.create();
+    mat4.multiply(projection, ortho, lookAt);
+    gl.uniformMatrix4fv(shaders.uniform.projection, false, projection);
+    gl.enableVertexAttribArray(shaders.positionAttribute);
 }
 
 function draw(gl, shaders, color, transform) {
@@ -78,9 +103,9 @@ function draw(gl, shaders, color, transform) {
 
 function drawRect1(gl, shaders, transform) {
     var transform = mat4.create();
-    mat4.translate(transform, transform, vec3.fromValues(-0.25, 0.25, 0.0));
+    mat4.translate(transform, transform, vec3.fromValues(20.0, 60.0, 0.0));
     mat4.rotateZ(transform, transform, 0.2);
-    mat4.scale(transform, transform, vec3.fromValues(1.2, 1.2, 1.0));
+    mat4.scale(transform, transform, vec3.fromValues(5.0, 5.0, 1.0));
     var color = {
         red: 0.25,
         green: 0.875,
@@ -92,34 +117,23 @@ function drawRect1(gl, shaders, transform) {
 
 function drawRect2(gl, shaders) {
     var transform = mat4.create();
-    mat4.translate(transform, transform, vec3.fromValues(0.25, -0.25, 0.0));
+    mat4.translate(transform, transform, vec3.fromValues(20.0, 60.0, 0.0));
     mat4.rotateZ(transform, transform, -0.785);
-    mat4.scale(transform, transform, vec3.fromValues(0.4, 0.4, 1.0));
+    mat4.scale(transform, transform, vec3.fromValues(2.0, 2.0, 1.0));
     var color = {
-        red: 0.875,
-        green: 0.25,
-        blue: 0.65,
+        red: 0.25,
+        green: 0.65,
+        blue: 0.875,
         alpha: 1.0,
     };
     draw(gl, shaders, color, transform);
 }
 
 window.onload = function() {
-    var gl = getGl({
-        red: 0.0,
-        green: 0.5,
-        blue: 0.75,
-        alpha: 1.0,
-    });
+    var gl = document.getElementById("canvas").getContext("webgl");
     var shaders = getShaders(gl, getVertexBuffer(gl));
-    gl.useProgram(shaders.program);
-    gl.enableVertexAttribArray(shaders.positionAttribute);
-    function loop() {
-        gl.clear(gl.COLOR_BUFFER_BIT);
-        drawRect1(gl, shaders);
-        drawRect2(gl, shaders);
-        requestAnimationFrame(loop);
-    }
-    loop();
+    setGl(gl, shaders);
+    drawRect1(gl, shaders);
+    drawRect2(gl, shaders);
     console.log("Done!");
 };
