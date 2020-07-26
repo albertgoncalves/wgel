@@ -58,7 +58,7 @@ function getShaders(gl) {
     };
 }
 
-function setGl(canvas, gl, shaders) {
+function setGl(canvas, gl, shaders, color) {
     var viewport = {
         offset: {
             x: 20.0,
@@ -98,16 +98,7 @@ function setGl(canvas, gl, shaders) {
                 viewport.offset.y,
                 viewport.width,
                 viewport.height);
-    gl.scissor(viewport.offset.x,
-               viewport.offset.y,
-               viewport.width,
-               viewport.height);
-    gl.clearColor(0.9, 0.9, 0.9, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.enable(gl.SCISSOR_TEST);
-    gl.clearColor(0.8, 0.8, 0.8, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.disable(gl.SCISSOR_TEST);
+    gl.clearColor(color.red, color.green, color.blue, color.alpha);
     gl.useProgram(shaders.program);
     gl.uniformMatrix4fv(shaders.uniform.projection, false, projection);
     gl.enableVertexAttribArray(shaders.positionAttribute);
@@ -134,6 +125,7 @@ function update(objects) {
 }
 
 function draw(gl, shaders, objects) {
+    gl.clear(gl.COLOR_BUFFER_BIT);
     for (var i = objects.length - 1; 0 <= i; --i) {
         gl.uniform4fv(shaders.uniform.color, objects[i].color);
         gl.uniformMatrix4fv(shaders.uniform.transform,
@@ -148,7 +140,12 @@ window.onload = function() {
     var gl = canvas.getContext("webgl");
     setVertexBuffer(gl);
     var shaders = getShaders(gl);
-    setGl(canvas, gl, shaders);
+    setGl(canvas, gl, shaders, {
+        red: 0.85,
+        green: 0.85,
+        blue: 0.85,
+        alpha: 1.0,
+    });
     var state = {
         fps: 60.0,
         alive: true,
