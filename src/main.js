@@ -123,10 +123,25 @@ function getTransform(x, y, width, height, rotate) {
     return transform;
 }
 
-function draw(gl, shaders, transform, color) {
+function drawRect(gl, shaders, transform, color) {
     gl.uniform4fv(shaders.uniform.color, color);
     gl.uniformMatrix4fv(shaders.uniform.transform, false, transform);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+}
+
+function draw(gl, shaders) {
+    drawRect(gl,
+             shaders,
+             getTransform(0.0, 0.0, 2.5, 2.5, 0.2),
+             getColorArray(0.25, 0.875, 0.65, 1.0));
+    drawRect(gl,
+             shaders,
+             getTransform(0.0, 0.0, 1.0, 1.0, -0.785),
+             getColorArray(0.25, 0.65, 0.875, 1.0));
+}
+
+function update() {
+    // ...
 }
 
 window.onload = function() {
@@ -135,13 +150,29 @@ window.onload = function() {
     setVertexBuffer(gl);
     var shaders = getShaders(gl);
     setGl(canvas, gl, shaders);
-    draw(gl,
-         shaders,
-         getTransform(0.0, 0.0, 2.5, 2.5, 0.2),
-         getColorArray(0.25, 0.875, 0.65, 1.0));
-    draw(gl,
-         shaders,
-         getTransform(0.0, 0.0, 1.0, 1.0, -0.785),
-         getColorArray(0.25, 0.65, 0.875, 1.0));
+    var state = {
+        fps: 60.0,
+        alive: true,
+        currentTime: Date.now(),
+        previousTime: Date.now(),
+        elapsedTime: 0.0,
+        lagTime: 0.0,
+    };
+    state.msPerFrame = 1000.0 / state.fps;
+    function loop() {
+        if (state.alive) {
+            state.currentTime = Date.now();
+            state.elapsedTime = state.currentTime - state.previousTime;
+            state.previousTime = state.currentTime;
+            state.lagTime += state.elapsedTime;
+            while (state.alive && (state.msPerFrame <= state.lagTime)) {
+                update();
+                state.lagTime -= state.msPerFrame;
+            }
+            draw(gl, shaders);
+            requestAnimationFrame(loop);
+        }
+    }
+    loop();
     console.log("Done!");
 };
