@@ -2,6 +2,8 @@
 
 "use strict";
 
+var TAU = Math.PI * 2.0;
+
 function getCompiledShader(gl, id, type) {
     var shader = gl.createShader(type);
     gl.shaderSource(shader,
@@ -123,25 +125,22 @@ function getTransform(x, y, width, height, rotate) {
     return transform;
 }
 
-function drawRect(gl, shaders, transform, color) {
-    gl.uniform4fv(shaders.uniform.color, color);
-    gl.uniformMatrix4fv(shaders.uniform.transform, false, transform);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+function update(objects) {
+    for (var i = objects.length - 1; 0 <= i; --i) {
+        mat4.rotateZ(objects[i].transform,
+                     objects[i].transform,
+                     0.005 * (i + 1));
+    }
 }
 
-function draw(gl, shaders) {
-    drawRect(gl,
-             shaders,
-             getTransform(0.0, 0.0, 2.5, 2.5, 0.2),
-             getColorArray(0.25, 0.875, 0.65, 1.0));
-    drawRect(gl,
-             shaders,
-             getTransform(0.0, 0.0, 1.0, 1.0, -0.785),
-             getColorArray(0.25, 0.65, 0.875, 1.0));
-}
-
-function update() {
-    // ...
+function draw(gl, shaders, objects) {
+    for (var i = objects.length - 1; 0 <= i; --i) {
+        gl.uniform4fv(shaders.uniform.color, objects[i].color);
+        gl.uniformMatrix4fv(shaders.uniform.transform,
+                            false,
+                            objects[i].transform);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    }
 }
 
 window.onload = function() {
@@ -159,6 +158,16 @@ window.onload = function() {
         lagTime: 0.0,
     };
     state.msPerFrame = 1000.0 / state.fps;
+    var objects = [
+        {
+            transform: getTransform(0.0, 0.0, 1.0, 1.0, TAU - 0.785),
+            color: getColorArray(0.25, 0.65, 0.875, 1.0),
+        },
+        {
+            transform: getTransform(0.0, 0.0, 2.5, 2.5, 0.2),
+            color: getColorArray(0.25, 0.875, 0.65, 1.0),
+        },
+    ];
     function loop() {
         if (state.alive) {
             state.currentTime = Date.now();
@@ -166,10 +175,10 @@ window.onload = function() {
             state.previousTime = state.currentTime;
             state.lagTime += state.elapsedTime;
             while (state.alive && (state.msPerFrame <= state.lagTime)) {
-                update();
+                update(objects);
                 state.lagTime -= state.msPerFrame;
             }
-            draw(gl, shaders);
+            draw(gl, shaders, objects);
             requestAnimationFrame(loop);
         }
     }
