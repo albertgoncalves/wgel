@@ -3,6 +3,13 @@
 "use strict";
 
 var TAU = Math.PI * 2.0;
+var KEY_CODE = {
+    left: 37,
+    up: 38,
+    right: 39,
+    down: 40,
+};
+var MAX_KEY_CODE = 256;
 
 function getCompiledShader(gl, id, type) {
     var shader = gl.createShader(type);
@@ -108,19 +115,31 @@ function getColorArray(red, green, blue, alpha) {
     return new Float32Array([red, green, blue, alpha]);
 }
 
-function getTransform(x, y, width, height, rotate) {
+function getTransform(rect) {
     var transform = mat4.create();
-    mat4.translate(transform, transform, vec3.fromValues(x, y, 0.0));
-    mat4.scale(transform, transform, vec3.fromValues(width, height, 1.0));
-    mat4.rotateZ(transform, transform, rotate);
+    mat4.translate(transform, transform, vec3.fromValues(rect.x, rect.y, 0.0));
+    mat4.scale(transform,
+               transform,
+               vec3.fromValues(rect.width, rect.height, 1.0));
+    mat4.rotateZ(transform, transform, rect.rotate);
     return transform;
 }
 
-function update(objects) {
+function update(state, objects) {
     for (var i = objects.length - 1; 0 <= i; --i) {
-        mat4.rotateZ(objects[i].transform,
-                     objects[i].transform,
-                     0.005 * (i + 1));
+        objects[i].rect.rotate += 0.005 * (i + 1);
+        if (state.keyDown[KEY_CODE.up]) {
+            objects[i].rect.y += 0.05;
+        }
+        if (state.keyDown[KEY_CODE.down]) {
+            objects[i].rect.y -= 0.05;
+        }
+        if (state.keyDown[KEY_CODE.left]) {
+            objects[i].rect.x -= 0.05;
+        }
+        if (state.keyDown[KEY_CODE.right]) {
+            objects[i].rect.x += 0.05;
+        }
     }
 }
 
@@ -130,9 +149,21 @@ function draw(gl, shaders, objects) {
         gl.uniform4fv(shaders.uniform.color, objects[i].color);
         gl.uniformMatrix4fv(shaders.uniform.transform,
                             false,
-                            objects[i].transform);
+                            getTransform(objects[i].rect));
         gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
     }
+}
+
+function keyDown(state) {
+    return function(event) {
+        state.keyDown[event.keyCode] = true;
+    };
+}
+
+function keyUp(state) {
+    return function(event) {
+        state.keyDown[event.keyCode] = false;
+    };
 }
 
 window.onload = function() {
@@ -153,15 +184,31 @@ window.onload = function() {
         previousTime: Date.now(),
         elapsedTime: 0.0,
         lagTime: 0.0,
+        keyDown: new Array(MAX_KEY_CODE),
     };
+    state.keyDown.fill(false);
     state.msPerFrame = 1000.0 / state.fps;
+    window.addEventListener("keydown", keyDown(state));
+    window.addEventListener("keyup", keyUp(state));
     var objects = [
         {
-            transform: getTransform(0.0, 0.0, 1.0, 1.0, TAU - 0.785),
+            rect: {
+                x: 0.0,
+                y: 0.0,
+                width: 1.0,
+                height: 1.0,
+                rotate: TAU - 0.785,
+            },
             color: getColorArray(0.25, 0.65, 0.875, 1.0),
         },
         {
-            transform: getTransform(0.0, 0.0, 2.5, 2.5, 0.2),
+            rect: {
+                x: 0.0,
+                y: 0.0,
+                width: 2.5,
+                height: 2.5,
+                rotate: 0.2,
+            },
             color: getColorArray(0.25, 0.875, 0.65, 1.0),
         },
     ];
@@ -172,7 +219,7 @@ window.onload = function() {
             state.previousTime = state.currentTime;
             state.lagTime += state.elapsedTime;
             while (state.alive && (state.msPerFrame <= state.lagTime)) {
-                update(objects);
+                update(state, objects);
                 state.lagTime -= state.msPerFrame;
             }
             draw(gl, shaders, objects);
