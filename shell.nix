@@ -5,6 +5,7 @@ llvmPackages_10.stdenv.mkDerivation {
         glibcLocales
         htmlTidy
         nodejs
+        okular
         parallel
         python3
         python3Packages.flake8
