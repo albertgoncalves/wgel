@@ -2,6 +2,8 @@
 !.gitignore
 !shell.nix
 !.shellhook
+!README.md
+!codegen
 !src/
 !.tidyrc
 !.clang-format
@@ -10,4 +12,5 @@
 !*.css
 !*.js
 !shader.*
-!codegen
+!assets/
+!*.gif
