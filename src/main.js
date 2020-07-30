@@ -40,13 +40,13 @@ var BACKGROUND_COLOR = {
 var SPEED_MOVE = 0.085;
 var SPEED_ROTATE = 0.005;
 var FPS = 60.0;
+var MS_PER_FRAME = 1000.0 / FPS;
 var STATE = {
     alive: true,
     currentTime: 0.0,
     previousTime: 0.0,
     elapsedTime: 0.0,
     lagTime: 0.0,
-    msPerFrame: 1000.0 / FPS,
     keyDown: new Array(MAX_KEY_CODE),
     objects: [
         {
@@ -221,9 +221,9 @@ function loop(gl, shaders) {
             STATE.elapsedTime = STATE.currentTime - STATE.previousTime;
             STATE.previousTime = STATE.currentTime;
             STATE.lagTime += STATE.elapsedTime;
-            while (STATE.alive && (STATE.msPerFrame <= STATE.lagTime)) {
+            while (STATE.alive && (MS_PER_FRAME <= STATE.lagTime)) {
                 update();
-                STATE.lagTime -= STATE.msPerFrame;
+                STATE.lagTime -= MS_PER_FRAME;
             }
             draw(gl, shaders);
             requestAnimationFrame(loop(gl, shaders));
