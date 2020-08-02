@@ -12,7 +12,3 @@
 !*.css
 !*.js
 !shader.*
-!assets/
-!*.xcf
-!*.gif
-!*.png
